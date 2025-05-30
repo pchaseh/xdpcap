@@ -170,8 +170,9 @@ func parseInstruction(insnStr string) (bpf.Instruction, error) {
 type flags struct {
 	*flag.FlagSet
 
-	mapPath  string
-	pcapFile *os.File
+	hookMapPath     string
+	attachedMapPath string
+	pcapFile        *os.File
 
 	quiet bool
 	flush bool
@@ -205,6 +206,8 @@ func parseFlags(name string, args []string) (flags, error) {
 	flags.linkType = layers.LinkTypeEthernet
 	flags.Var((*linkTypeFlag)(&flags.linkType), "linktype", fmt.Sprintf("Linktype to use when compiling <filter expr>. Name (%v) or enum value", linkTypes()))
 
+	flags.StringVar(&flags.attachedMapPath, "attachedmap", "", fmt.Sprintf("Use the specified map to indicate when xdpcap is attached"))
+
 	err := flags.Parse(args)
 	if err != nil {
 		return flags, err
@@ -214,7 +217,7 @@ func parseFlags(name string, args []string) (flags, error) {
 		return flags, errors.New("missing required <debug map> / <output>")
 	}
 
-	flags.mapPath = flags.Arg(0)
+	flags.hookMapPath = flags.Arg(0)
 
 	if output := flags.Arg(1); output == "-" {
 		flags.pcapFile = os.Stdout

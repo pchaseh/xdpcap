@@ -251,14 +251,14 @@ func tempOutput(t *testing.T) string {
 	return output.Name()
 }
 
-func defaultFlags(mapPath string) flags {
+func defaultFlags(hookMapPath string) flags {
 	return flags{
-		mapPath:    mapPath,
-		pcapFile:   nil,
-		quiet:      false,
-		flush:      false,
-		linkType:   layers.LinkTypeEthernet,
-		filterExpr: "",
+		hookMapPath: hookMapPath,
+		pcapFile:    nil,
+		quiet:       false,
+		flush:       false,
+		linkType:    layers.LinkTypeEthernet,
+		filterExpr:  "",
 		filterOpts: filterOpts{
 			perfPerCPUBuffer: 8192,
 			perfWatermark:    1,

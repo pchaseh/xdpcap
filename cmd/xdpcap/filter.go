@@ -34,8 +34,9 @@ type filterOpts struct {
 
 // filter represents a filter loaded into the kernel
 type filter struct {
-	hookMap *ebpf.Map
-	reader  *perf.Reader
+	hookMap     *ebpf.Map
+	attachedMap *ebpf.Map
+	reader      *perf.Reader
 
 	programs map[xdpAction]*program
 
@@ -44,17 +45,25 @@ type filter struct {
 }
 
 // newFilter creates a filter from a tcpdump / libpcap filter expression
-func newFilter(hookMapPath string, opts filterOpts) (*filter, error) {
+func newFilter(hookMapPath string, attachedMapPath string, opts filterOpts) (*filter, error) {
 	hookMap, err := ebpf.LoadPinnedMap(hookMapPath, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "loading hook map")
 	}
 
-	return newFilterWithMap(hookMap, opts)
+	var attachedMap *ebpf.Map
+	if attachedMapPath != "" {
+		attachedMap, err = ebpf.LoadPinnedMap(attachedMapPath, nil)
+		if err != nil {
+			return nil, errors.Wrapf(err, "loading attached map")
+		}
+	}
+
+	return newFilterWithMap(hookMap, attachedMap, opts)
 }
 
 // newFilterWithMap creates a filter from a tcpdump / libpcap filter expression
-func newFilterWithMap(hookMap *ebpf.Map, opts filterOpts) (*filter, error) {
+func newFilterWithMap(hookMap *ebpf.Map, attachedMap *ebpf.Map, opts filterOpts) (*filter, error) {
 	if len(opts.filter) == 0 {
 		return nil, errors.New("at least one filter cBPF instruction required")
 	}
@@ -124,6 +133,13 @@ func newFilterWithMap(hookMap *ebpf.Map, opts filterOpts) (*filter, error) {
 		filter.programs[action] = program
 	}
 
+	if attachedMap != nil {
+		err := attachedMap.Put(int32(0), int32(1))
+		if err != nil {
+			return nil, errors.Wrap(err, "updating attached map")
+		}
+	}
+
 	return filter, nil
 }
 
@@ -157,6 +173,10 @@ func (f *filter) close() error {
 		err = f.hookMap.Delete(int32(action))
 
 		prog.close()
+	}
+
+	if f.attachedMap != nil {
+		err = f.attachedMap.Put(int32(0), int32(0))
 	}
 
 	f.reader.Close()
