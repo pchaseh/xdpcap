@@ -1,0 +1,3 @@
+[submodule "gopacket"]
+	path = gopacket
+	url = git@github.com:pchaseh/gopacket.git

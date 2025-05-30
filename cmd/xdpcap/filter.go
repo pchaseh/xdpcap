@@ -14,8 +14,9 @@ import (
 )
 
 type packet struct {
-	action xdpAction
-	data   []byte
+	action  xdpAction
+	counter uint32
+	data    []byte
 }
 
 var perfMapSpec = ebpf.MapSpec{
@@ -203,12 +204,13 @@ func (f *filter) read() (packet, error) {
 	raw := record.RawSample
 
 	// The sample format is as follows:
-	// <u64: action> <u64: length> <byte * length: raw packet including L2 headers> <padding to 64bits>
+	// <u32: action> <u32: counter> <u64: length> <byte * length: raw packet including L2 headers> <padding to 64bits>
 	if len(raw) < 16 {
 		return packet{}, errors.New("perf packet data < 16 bytes")
 	}
 
-	action := xdpAction(nativeEndian.Uint64(raw[:8]))
+	action := xdpAction(nativeEndian.Uint32(raw[:4]))
+	counter := nativeEndian.Uint32(raw[4:8])
 	length := int(nativeEndian.Uint64(raw[8:16]))
 	data := raw[16:]
 
@@ -217,8 +219,9 @@ func (f *filter) read() (packet, error) {
 	}
 
 	return packet{
-		action: action,
-		data:   data[:length],
+		action:  action,
+		counter: counter,
+		data:    data[:length],
 	}, nil
 }
 

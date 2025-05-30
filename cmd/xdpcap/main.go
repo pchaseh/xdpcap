@@ -121,9 +121,17 @@ func capture(flags flags) error {
 				CaptureLength:  len(pkt.data),
 				Length:         len(pkt.data),
 				InterfaceIndex: interfaces[pkt.action],
+				AncillaryData:  []interface{}{},
 			}
+			info.AncillaryData = append(info.AncillaryData,
+				struct {
+					Counter uint32
+				}{
+					Counter: pkt.counter,
+				},
+			)
 
-			err = pcapWriter.WritePacket(info, pkt.data)
+			err = pcapWriter.WritePacketWithComment(info, pkt.data, fmt.Sprintf("Counter: %d", pkt.counter))
 			if err != nil {
 				fmt.Fprintln(os.Stderr, "Error writing packet:", err)
 			}

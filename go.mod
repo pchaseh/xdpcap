@@ -1,5 +1,7 @@
 module github.com/cloudflare/xdpcap
 
+replace github.com/google/gopacket => ./gopacket
+
 require (
 	github.com/cilium/ebpf v0.11.0
 	github.com/cloudflare/cbpfc v0.0.0-20221017140110-11acb56438a2

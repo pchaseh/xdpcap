@@ -99,6 +99,17 @@ func newProgram(filter []bpf.Instruction, action xdpAction, perfMap *ebpf.Map, x
 		// Packet end
 		asm.LoadMem(asm.R1, asm.R6, 4, asm.Word),
 
+		// Packet metadata
+		asm.LoadMem(asm.R9, asm.R6, 8, asm.Word),
+
+		// Ensure that metadata + 4 is in bounds
+		asm.Mov.Reg(asm.R3, asm.R9),
+		asm.Add.Imm(asm.R3, 4),
+		asm.JGT.Reg(asm.R3, asm.R0, exit),
+
+		// Load the packet metadata value
+		asm.LoadMem(asm.R5, asm.R9, 0, asm.Word),
+
 		// Packet length
 		asm.Mov.Reg(asm.R8, asm.R1),
 		asm.Sub.Reg(asm.R8, asm.R0),
@@ -137,9 +148,12 @@ func newProgram(filter []bpf.Instruction, action xdpAction, perfMap *ebpf.Map, x
 		//   <u64 packet length>
 		asm.Add.Imm(asm.R4, -8),
 		asm.StoreMem(asm.R4, 0, asm.R8, asm.DWord),
-		//   <u64 action>
-		asm.Add.Imm(asm.R4, -8),
-		asm.StoreImm(asm.R4, 0, int64(action), asm.DWord),
+		//   <u32 counter>
+		asm.Add.Imm(asm.R4, -4),
+		asm.StoreMem(asm.R4, 0, asm.R5, asm.Word),
+		//   <u32 action>
+		asm.Add.Imm(asm.R4, -4),
+		asm.StoreImm(asm.R4, 0, int64(uint32(action)), asm.Word),
 		// sizeof(data)
 		asm.Mov.Imm(asm.R5, 2*8),
 		// call
