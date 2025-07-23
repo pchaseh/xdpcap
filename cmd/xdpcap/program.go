@@ -64,7 +64,7 @@ func newProgram(filter []bpf.Instruction, action xdpAction, perfMap *ebpf.Map, x
 		Result:      asm.R2,
 		ResultLabel: result,
 
-		Working: [4]asm.Register{asm.R2, asm.R3, asm.R4, asm.R5},
+		Working: [4]asm.Register{asm.R2, asm.R3, asm.R4, asm.R9},
 
 		StackOffset: 0,
 		LabelPrefix: "filter",
