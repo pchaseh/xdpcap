@@ -179,6 +179,7 @@ func newProgram(filter []bpf.Instruction, action xdpAction, perfMap *ebpf.Map, x
 	progSpec := &ebpf.ProgramSpec{
 		Name:         "xdpcap_filter",
 		Type:         ebpf.XDP,
+		AttachType:   ebpf.AttachXDP,
 		Instructions: insns,
 		License:      "GPL",
 	}
