@@ -125,13 +125,20 @@ func capture(flags flags) error {
 			}
 			info.AncillaryData = append(info.AncillaryData,
 				struct {
-					Counter uint32
+					Counter       uint32
+					TunnelIfindex uint32
 				}{
-					Counter: pkt.counter,
+					Counter:       pkt.counter,
+					TunnelIfindex: pkt.tunnelIfindex,
 				},
 			)
 
-			err = pcapWriter.WritePacketWithComment(info, pkt.data, fmt.Sprintf("Counter: %d", pkt.counter))
+			comment := fmt.Sprintf("Counter: %d", pkt.counter)
+			if pkt.tunnelIfindex != 0 {
+				comment += fmt.Sprintf(" Tunnel ifindex: %d", pkt.tunnelIfindex)
+			}
+
+			err = pcapWriter.WritePacketWithComment(info, pkt.data, comment)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, "Error writing packet:", err)
 			}

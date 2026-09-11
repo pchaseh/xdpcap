@@ -14,9 +14,10 @@ import (
 )
 
 type packet struct {
-	action  xdpAction
-	counter uint32
-	data    []byte
+	action        xdpAction
+	counter       uint32
+	tunnelIfindex uint32
+	data          []byte
 }
 
 var perfMapSpec = ebpf.MapSpec{
@@ -204,24 +205,26 @@ func (f *filter) read() (packet, error) {
 	raw := record.RawSample
 
 	// The sample format is as follows:
-	// <u32: action> <u32: counter> <u64: length> <byte * length: raw packet including L2 headers> <padding to 64bits>
-	if len(raw) < 16 {
-		return packet{}, errors.New("perf packet data < 16 bytes")
+	// <u32: action> <u32: counter> <u32: tunnel ifindex> <u64: length> <byte * length: raw packet including L2 headers> <padding to 64bits>
+	if len(raw) < 20 {
+		return packet{}, errors.New("perf packet data < 20 bytes")
 	}
 
 	action := xdpAction(nativeEndian.Uint32(raw[:4]))
 	counter := nativeEndian.Uint32(raw[4:8])
-	length := int(nativeEndian.Uint64(raw[8:16]))
-	data := raw[16:]
+	tunnelIfindex := nativeEndian.Uint32(raw[8:12])
+	length := int(nativeEndian.Uint64(raw[12:20]))
+	data := raw[20:]
 
 	if len(data) < length {
 		return packet{}, errors.New("perf packet truncated")
 	}
 
 	return packet{
-		action:  action,
-		counter: counter,
-		data:    data[:length],
+		action:        action,
+		counter:       counter,
+		tunnelIfindex: tunnelIfindex,
+		data:          data[:length],
 	}, nil
 }
 
